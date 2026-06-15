@@ -31,6 +31,14 @@ playground.xcworkspace
 
 .build/
 
+# VS Code
+.vscode/
+
+# SQLite databases
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However
