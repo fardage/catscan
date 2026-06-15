@@ -2,6 +2,8 @@
 import VaporTesting
 import Testing
 import Fluent
+import Domain
+import Data
 
 @Suite("App Tests with DB", .serialized)
 struct CatscanServerTests {
@@ -19,7 +21,14 @@ struct CatscanServerTests {
         }
         try await app.asyncShutdown()
     }
-    
+
+    /// Local mirror of the Presentation `TodoDTO` so tests can assert on HTTP
+    /// payloads without that DTO leaking out of the Presentation layer.
+    struct TodoPayload: Content, Equatable {
+        var id: UUID?
+        var title: String?
+    }
+
     @Test("Test Hello World Route")
     func helloWorld() async throws {
         try await withApp { app in
@@ -29,56 +38,51 @@ struct CatscanServerTests {
             })
         }
     }
-    
+
     @Test("Getting all the Todos")
     func getAllTodos() async throws {
         try await withApp { app in
-            let sampleTodos = [Todo(title: "sample1"), Todo(title: "sample2")]
-            try await sampleTodos.create(on: app.db)
-            
+            let repo = FluentTodoRepository(database: app.db)
+            _ = try await repo.create(.init(title: "sample1"))
+            _ = try await repo.create(.init(title: "sample2"))
+
             try await app.testing().test(.GET, "todos", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                #expect(try
-                    res.content.decode([TodoDTO].self).sorted(by: { ($0.title ?? "") < ($1.title ?? "") }) ==
-                    sampleTodos.map { $0.toDTO() }.sorted(by: { ($0.title ?? "") < ($1.title ?? "") })
-                )
+                let titles = try res.content.decode([TodoPayload].self)
+                    .compactMap(\.title)
+                    .sorted()
+                #expect(titles == ["sample1", "sample2"])
             })
         }
     }
-    
+
     @Test("Creating a Todo")
     func createTodo() async throws {
-        let newDTO = TodoDTO(id: nil, title: "test")
-        
         try await withApp { app in
+            let newTodo = TodoPayload(id: nil, title: "test")
+
             try await app.testing().test(.POST, "todos", beforeRequest: { req in
-                try req.content.encode(newDTO)
+                try req.content.encode(newTodo)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let models = try await Todo.query(on: app.db).all()
-                #expect(models.map({ $0.toDTO().title }) == [newDTO.title])
+                let stored = try await FluentTodoRepository(database: app.db).all()
+                #expect(stored.map(\.title) == ["test"])
             })
         }
     }
-    
+
     @Test("Deleting a Todo")
     func deleteTodo() async throws {
-        let testTodos = [Todo(title: "test1"), Todo(title: "test2")]
-        
         try await withApp { app in
-            try await testTodos.create(on: app.db)
-            
-            try await app.testing().test(.DELETE, "todos/\(testTodos[0].requireID())", afterResponse: { res async throws in
+            let repo = FluentTodoRepository(database: app.db)
+            let created = try await repo.create(.init(title: "test1"))
+            _ = try await repo.create(.init(title: "test2"))
+
+            try await app.testing().test(.DELETE, "todos/\(try #require(created.id))", afterResponse: { res async throws in
                 #expect(res.status == .noContent)
-                let model = try await Todo.find(testTodos[0].id, on: app.db)
-                #expect(model == nil)
+                let remaining = try await repo.all().map(\.title)
+                #expect(remaining == ["test2"])
             })
         }
-    }
-}
-
-extension TodoDTO: Equatable {
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id && lhs.title == rhs.title
     }
 }

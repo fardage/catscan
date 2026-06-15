@@ -7,6 +7,10 @@ let package = Package(
        .macOS(.v13)
     ],
     dependencies: [
+        // 🧱 Clean Architecture layers as local SPM packages.
+        .package(path: "Packages/Domain"),
+        .package(path: "Packages/Data"),
+        .package(path: "Packages/Presentation"),
         // 💧 A server-side Swift web framework.
         .package(url: "https://github.com/vapor/vapor.git", from: "4.115.0"),
         // 🗄 An ORM for SQL and NoSQL databases.
@@ -20,6 +24,9 @@ let package = Package(
         .executableTarget(
             name: "CatscanServer",
             dependencies: [
+                .product(name: "Domain", package: "Domain"),
+                .product(name: "Data", package: "Data"),
+                .product(name: "Presentation", package: "Presentation"),
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
                 .product(name: "Vapor", package: "vapor"),
@@ -32,6 +39,9 @@ let package = Package(
             name: "CatscanServerTests",
             dependencies: [
                 .target(name: "CatscanServer"),
+                .product(name: "Domain", package: "Domain"),
+                .product(name: "Data", package: "Data"),
+                .product(name: "Presentation", package: "Presentation"),
                 .product(name: "VaporTesting", package: "vapor"),
             ],
             swiftSettings: swiftSettings
