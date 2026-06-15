@@ -12,7 +12,7 @@ public func configure(_ app: Application) async throws {
 
     app.databases.use(DatabaseConfigurationFactory.sqlite(.file("db.sqlite")), as: .sqlite)
 
-    app.migrations.add(CreateTodo())
+    app.migrations.add(CreateFlapEvent())
 
     // wire the Data layer's concrete repositories into the Presentation seam
     app.repositories.use { req in

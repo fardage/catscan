@@ -10,7 +10,7 @@ public struct LiveRepositoryProvider: RepositoryProvider {
         self.database = database
     }
 
-    public var todos: any TodoRepository {
-        FluentTodoRepository(database: database)
+    public var flapEvents: any FlapEventRepository {
+        FluentFlapEventRepository(database: database)
     }
 }

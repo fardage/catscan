@@ -1,16 +1,16 @@
 import Fluent
 
-public struct CreateTodo: AsyncMigration {
+public struct CreateFlapEvent: AsyncMigration {
     public init() {}
 
     public func prepare(on database: any Database) async throws {
-        try await database.schema("todos")
+        try await database.schema("flap_events")
             .id()
-            .field("title", .string, .required)
+            .field("timestamp", .datetime, .required)
             .create()
     }
 
     public func revert(on database: any Database) async throws {
-        try await database.schema("todos").delete()
+        try await database.schema("flap_events").delete()
     }
 }

@@ -2,6 +2,7 @@
 import VaporTesting
 import Testing
 import Fluent
+import Foundation
 import Domain
 import Data
 
@@ -22,11 +23,11 @@ struct CatscanServerTests {
         try await app.asyncShutdown()
     }
 
-    /// Local mirror of the Presentation `TodoDTO` so tests can assert on HTTP
-    /// payloads without that DTO leaking out of the Presentation layer.
-    struct TodoPayload: Content, Equatable {
+    /// Local mirror of the Presentation `FlapEventDTO` so tests can assert on
+    /// HTTP payloads without that DTO leaking out of the Presentation layer.
+    struct FlapEventPayload: Content, Equatable {
         var id: UUID?
-        var title: String?
+        var timestamp: Date?
     }
 
     @Test("Test Hello World Route")
@@ -39,49 +40,48 @@ struct CatscanServerTests {
         }
     }
 
-    @Test("Getting all the Todos")
-    func getAllTodos() async throws {
+    @Test("Getting all the flap events")
+    func getAllFlapEvents() async throws {
         try await withApp { app in
-            let repo = FluentTodoRepository(database: app.db)
-            _ = try await repo.create(.init(title: "sample1"))
-            _ = try await repo.create(.init(title: "sample2"))
+            let repo = FluentFlapEventRepository(database: app.db)
+            _ = try await repo.create(.init(timestamp: Date()))
+            _ = try await repo.create(.init(timestamp: Date()))
 
-            try await app.testing().test(.GET, "todos", afterResponse: { res async throws in
+            try await app.testing().test(.GET, "flap-events", afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let titles = try res.content.decode([TodoPayload].self)
-                    .compactMap(\.title)
-                    .sorted()
-                #expect(titles == ["sample1", "sample2"])
+                let events = try res.content.decode([FlapEventPayload].self)
+                #expect(events.count == 2)
             })
         }
     }
 
-    @Test("Creating a Todo")
-    func createTodo() async throws {
+    @Test("Creating a flap event")
+    func createFlapEvent() async throws {
         try await withApp { app in
-            let newTodo = TodoPayload(id: nil, title: "test")
+            let newEvent = FlapEventPayload(id: nil, timestamp: Date())
 
-            try await app.testing().test(.POST, "todos", beforeRequest: { req in
-                try req.content.encode(newTodo)
+            try await app.testing().test(.POST, "flap-events", beforeRequest: { req in
+                try req.content.encode(newEvent)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-                let stored = try await FluentTodoRepository(database: app.db).all()
-                #expect(stored.map(\.title) == ["test"])
+                let stored = try await FluentFlapEventRepository(database: app.db).all()
+                #expect(stored.count == 1)
             })
         }
     }
 
-    @Test("Deleting a Todo")
-    func deleteTodo() async throws {
+    @Test("Deleting a flap event")
+    func deleteFlapEvent() async throws {
         try await withApp { app in
-            let repo = FluentTodoRepository(database: app.db)
-            let created = try await repo.create(.init(title: "test1"))
-            _ = try await repo.create(.init(title: "test2"))
+            let repo = FluentFlapEventRepository(database: app.db)
+            let created = try await repo.create(.init(timestamp: Date()))
+            _ = try await repo.create(.init(timestamp: Date()))
 
-            try await app.testing().test(.DELETE, "todos/\(try #require(created.id))", afterResponse: { res async throws in
+            try await app.testing().test(.DELETE, "flap-events/\(try #require(created.id))", afterResponse: { res async throws in
                 #expect(res.status == .noContent)
-                let remaining = try await repo.all().map(\.title)
-                #expect(remaining == ["test2"])
+                let remaining = try await repo.all()
+                #expect(remaining.count == 1)
+                #expect(remaining.first?.id != created.id)
             })
         }
     }
