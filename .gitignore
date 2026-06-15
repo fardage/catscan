@@ -1,9 +1,13 @@
+# macOS
+.DS_Store
+
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
 ## User settings
 xcuserdata/
+DerivedData/
 
 ## Obj-C/Swift specific
 *.hmap
@@ -27,7 +31,7 @@ playground.xcworkspace
 #
 # Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
 # hence it is not needed unless you have added a package configuration file to your project
-# .swiftpm
+.swiftpm/
 
 .build/
 
@@ -68,3 +72,15 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Environment & credentials
+.env
+.env.*
+!.env.example
+.netrc
+
+# CatscanServer runtime artifacts
+# Captured frames written by the ffmpeg capture service.
+catscan-server/events/
+# Only the root Package.resolved is authoritative; nested ones are artifacts.
+catscan-server/Packages/*/Package.resolved
