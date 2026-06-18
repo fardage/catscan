@@ -19,6 +19,8 @@ struct FlapEventDTO: Content {
     init(from entity: Domain.FlapEvent) {
         self.id = entity.id
         self.timestamp = entity.timestamp
-        self.imagePath = entity.imagePath
+        if let path = entity.imagePath {
+            self.imagePath = "/images/" + URL(fileURLWithPath: path).lastPathComponent
+        }
     }
 }
