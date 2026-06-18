@@ -7,6 +7,7 @@ public struct CreateFlapEvent: AsyncMigration {
         try await database.schema("flap_events")
             .id()
             .field("timestamp", .datetime, .required)
+            .field("image_path", .string)
             .create()
     }
 

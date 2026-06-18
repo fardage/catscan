@@ -9,8 +9,10 @@ import Subprocess
 public struct FFmpegCaptureConfiguration: Sendable {
     /// The input the camera exposes, e.g. `rtsp://192.168.0.51:8554/cam`.
     public var source: String
-    /// Directory the frame files are written to. Created if it does not exist.
+    /// Directory ffmpeg writes staging frames to. Created if it does not exist.
     public var outputDirectory: URL
+    /// Directory permanent timestamp-named images are copied to.
+    public var imagesDirectory: URL
     /// `printf`-style filename pattern handed to ffmpeg, e.g. `frame-%05d.jpg`.
     public var filenamePattern: String
     /// Scene-change score above which a frame is emitted (the `gt(scene, …)`).
@@ -27,6 +29,7 @@ public struct FFmpegCaptureConfiguration: Sendable {
     public init(
         source: String,
         outputDirectory: URL,
+        imagesDirectory: URL,
         filenamePattern: String = "frame-%05d.jpg",
         sceneThreshold: Double = 0.1,
         rtspTransport: String = "tcp",
@@ -36,6 +39,7 @@ public struct FFmpegCaptureConfiguration: Sendable {
     ) {
         self.source = source
         self.outputDirectory = outputDirectory
+        self.imagesDirectory = imagesDirectory
         self.filenamePattern = filenamePattern
         self.sceneThreshold = sceneThreshold
         self.rtspTransport = rtspTransport

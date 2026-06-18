@@ -82,5 +82,7 @@ fastlane/test_output
 # CatscanServer runtime artifacts
 # Captured frames written by the ffmpeg capture service.
 catscan-server/events/
+# Permanent timestamp-named images copied from the staging area.
+catscan-server/Public/images/
 # Only the root Package.resolved is authoritative; nested ones are artifacts.
 catscan-server/Packages/*/Package.resolved

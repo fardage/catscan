@@ -83,6 +83,7 @@ public struct FFmpegFrameCaptureService: FrameCaptureService {
     ) async throws {
         var scanner = FrameScanner(
             directory: configuration.outputDirectory,
+            imagesDirectory: configuration.imagesDirectory,
             suffix: "." + configuration.fileExtension
         )
 
@@ -105,17 +106,28 @@ public struct FFmpegFrameCaptureService: FrameCaptureService {
 /// Stateful directory scan that turns frame files into `CapturedFrame`s.
 /// `newFrames()` returns only frames not yet reported, and only once a file's
 /// size is stable across two scans — so a frame ffmpeg is still writing is held
-/// back until the next scan.
+/// back until the next scan. Each stable frame is copied to `imagesDirectory`
+/// under a timestamp-based name (`YYYY-MM-DD_HH-MM-SS.mmm.jpg`) and the staging
+/// file is removed.
 private struct FrameScanner {
     let directory: URL
+    let imagesDirectory: URL
     let suffix: String
 
     private let fileManager = FileManager.default
     private var emitted: Set<String> = []
     private var pendingSizes: [String: Int] = [:]
 
-    init(directory: URL, suffix: String) {
+    // DateFormatter is not thread-safe, but FrameScanner is always driven from a single Task.
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        return f
+    }()
+
+    init(directory: URL, imagesDirectory: URL, suffix: String) {
         self.directory = directory
+        self.imagesDirectory = imagesDirectory
         self.suffix = suffix
     }
 
@@ -127,7 +139,8 @@ private struct FrameScanner {
         var frames: [CapturedFrame] = []
         for name in names {
             let url = directory.appendingPathComponent(name)
-            let size = (try? fileManager.attributesOfItem(atPath: url.path)[.size]) as? Int ?? 0
+            let attrs = (try? fileManager.attributesOfItem(atPath: url.path)) ?? [:]
+            let size = attrs[.size] as? Int ?? 0
             guard size > 0 else { continue }
 
             guard pendingSizes[name] == size else {
@@ -136,11 +149,28 @@ private struct FrameScanner {
             }
             pendingSizes[name] = nil
             emitted.insert(name)
-            frames.append(
-                CapturedFrame(url: url, index: frameIndex(from: name), detectedAt: Date())
-            )
+
+            let fileDate = attrs[.modificationDate] as? Date ?? Date()
+            let imagePath = copyToImages(from: url, date: fileDate)
+            frames.append(CapturedFrame(url: url, index: frameIndex(from: name), detectedAt: fileDate, imagePath: imagePath))
         }
         return frames
+    }
+
+    /// Copies the staging frame into `imagesDirectory` with a timestamp name and
+    /// deletes the original. Returns the destination path, or `nil` on failure.
+    private func copyToImages(from url: URL, date: Date) -> String? {
+        let ms = Int(date.timeIntervalSince1970.truncatingRemainder(dividingBy: 1) * 1000)
+        let name = String(format: "%@.%03d%@", Self.dateFormatter.string(from: date), ms, suffix)
+        let destination = imagesDirectory.appendingPathComponent(name)
+        do {
+            try fileManager.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
+            try fileManager.copyItem(at: url, to: destination)
+            try? fileManager.removeItem(at: url)
+            return destination.path
+        } catch {
+            return nil
+        }
     }
 
     /// Parses the trailing run of digits from a frame filename

@@ -12,6 +12,9 @@ private extension Environment {
     static var eventsDir: String? {
         Self.get("EVENTS_DIR")
     }
+    static var imagesDir: String? {
+        Self.get("IMAGES_DIR")
+    }
     static var ffmpegPath: String? {
         Self.get("FFMPEG_PATH")
     }
@@ -19,8 +22,7 @@ private extension Environment {
 
 // configures your application
 public func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     app.databases.use(DatabaseConfigurationFactory.sqlite(.file("db.sqlite")), as: .sqlite)
 
@@ -46,12 +48,16 @@ public func configure(_ app: Application) async throws {
 /// defaults to `<workingDirectory>/events` (`/app/events` in the container, which
 /// the `vapor` user can write) and can be overridden with `EVENTS_DIR`.
 private func frameCaptureConfiguration(_ app: Application, source: String) -> FFmpegCaptureConfiguration {
+    let workingDir = URL(fileURLWithPath: app.directory.workingDirectory)
     let outputDirectory = Environment.eventsDir.map { URL(fileURLWithPath: $0, isDirectory: true) }
-        ?? URL(fileURLWithPath: app.directory.workingDirectory).appendingPathComponent("events", isDirectory: true)
+        ?? workingDir.appendingPathComponent("events", isDirectory: true)
+    let imagesDirectory = Environment.imagesDir.map { URL(fileURLWithPath: $0, isDirectory: true) }
+        ?? workingDir.appendingPathComponent("Public/images", isDirectory: true)
 
     return FFmpegCaptureConfiguration(
         source: source,
         outputDirectory: outputDirectory,
+        imagesDirectory: imagesDirectory,
         executableName: Environment.ffmpegPath ?? "ffmpeg"
     )
 }

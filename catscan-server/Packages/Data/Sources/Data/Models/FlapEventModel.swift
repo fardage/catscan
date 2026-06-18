@@ -15,18 +15,22 @@ final class FlapEventModel: Model, @unchecked Sendable {
     @Field(key: "timestamp")
     var timestamp: Date
 
+    @OptionalField(key: "image_path")
+    var imagePath: String?
+
     init() { }
 
-    init(id: UUID? = nil, timestamp: Date) {
+    init(id: UUID? = nil, timestamp: Date, imagePath: String? = nil) {
         self.id = id
         self.timestamp = timestamp
+        self.imagePath = imagePath
     }
 
     convenience init(from entity: Domain.FlapEvent) {
-        self.init(id: entity.id, timestamp: entity.timestamp)
+        self.init(id: entity.id, timestamp: entity.timestamp, imagePath: entity.imagePath)
     }
 
     func toEntity() -> Domain.FlapEvent {
-        .init(id: self.id, timestamp: self.timestamp)
+        .init(id: self.id, timestamp: self.timestamp, imagePath: self.imagePath)
     }
 }

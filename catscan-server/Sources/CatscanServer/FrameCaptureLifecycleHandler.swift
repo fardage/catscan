@@ -63,7 +63,7 @@ final class FrameCaptureLifecycleHandler: LifecycleHandler {
         while !Task.isCancelled {
             do {
                 for try await frame in service.capture() {
-                    let event = try await createEvent.execute(FlapEvent(timestamp: frame.detectedAt))
+                    let event = try await createEvent.execute(FlapEvent(timestamp: frame.detectedAt, imagePath: frame.imagePath))
                     logger.info("Recorded flap event", metadata: [
                         "frame": .string(frame.url.lastPathComponent),
                         "eventID": .string(event.id?.uuidString ?? "?"),
