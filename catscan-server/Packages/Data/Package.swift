@@ -13,6 +13,7 @@ let package = Package(
         .package(path: "../Domain"),
         .package(url: "https://github.com/vapor/fluent.git", from: "4.9.0"),
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.6.0"),
+        .package(url: "https://github.com/swiftlang/swift-subprocess.git", from: "0.1.0"),
     ],
     targets: [
         .target(
@@ -21,6 +22,7 @@ let package = Package(
                 .product(name: "Domain", package: "Domain"),
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
+                .product(name: "Subprocess", package: "swift-subprocess"),
             ],
             swiftSettings: swiftSettings
         ),
