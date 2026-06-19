@@ -86,3 +86,5 @@ catscan-server/events/
 catscan-server/Public/images/
 # Only the root Package.resolved is authoritative; nested ones are artifacts.
 catscan-server/Packages/*/Package.resolved
+# catscan-shared is a local dependency — version pinning is owned by the consuming package.
+catscan-shared/Package.resolved
