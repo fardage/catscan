@@ -88,3 +88,5 @@ catscan-server/Public/images/
 catscan-server/Packages/*/Package.resolved
 # catscan-shared is a local dependency — version pinning is owned by the consuming package.
 catscan-shared/Package.resolved
+# The workspace-level Package.resolved supersedes the per-project one.
+catscan-app/catscan.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
