@@ -1,0 +1,73 @@
+openapi: "3.1.0"
+info:
+  title: Catscan API
+  version: 1.0.0
+servers:
+  - url: /
+    description: Local server
+paths:
+  /flap-events:
+    get:
+      operationId: listFlapEvents
+      summary: List all flap events
+      responses:
+        "200":
+          description: A list of flap events.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlapEvent"
+    post:
+      operationId: createFlapEvent
+      summary: Create a flap event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFlapEventRequest"
+      responses:
+        "201":
+          description: The created flap event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlapEvent"
+  /flap-events/{id}:
+    delete:
+      operationId: deleteFlapEvent
+      summary: Delete a flap event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Successfully deleted.
+components:
+  schemas:
+    FlapEvent:
+      type: object
+      required:
+        - id
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        imagePath:
+          type: string
+    CreateFlapEventRequest:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time

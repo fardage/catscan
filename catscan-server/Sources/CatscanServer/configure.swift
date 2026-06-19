@@ -4,6 +4,8 @@ import FluentSQLiteDriver
 import Vapor
 import Data
 import Presentation
+import OpenAPIVapor
+import CatscanAPI
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -32,6 +34,7 @@ public func configure(_ app: Application) async throws {
         )))
     }
 
-    // register routes
-    try routes(app)
+    // Register OpenAPI routes
+    let transport = VaporTransport(routesBuilder: app)
+    try FlapEventHandler(app: app).registerHandlers(on: transport, serverURL: Servers.Server1.url())
 }
