@@ -1,7 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM swift:6.1-noble AS build
+FROM swift:6.2-noble AS build
 
 # Install OS updates
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
@@ -12,29 +12,30 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
 # Set up a build area
 WORKDIR /build
 
-# First just resolve dependencies.
-# This creates a cached layer that can be reused
-# as long as your Package.swift/Package.resolved
-# files do not change.
-COPY ./Package.* ./
-RUN swift package resolve \
+# Copy package manifests for all local packages to cache dependency resolution separately.
+# Build context is the repo root so catscan-shared is reachable.
+COPY ./catscan-server/Package.* ./catscan-server/
+COPY ./catscan-server/Packages ./catscan-server/Packages
+COPY ./catscan-shared/Package.swift ./catscan-shared/Package.swift
+COPY ./catscan-shared/Sources ./catscan-shared/Sources
+
+RUN cd catscan-server && swift package resolve \
         $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
 
-# Copy entire repo into container
-COPY . .
+# Copy full server source
+COPY ./catscan-server ./catscan-server
 
 RUN mkdir /staging
 
 # Build the application, with optimizations, with static linking, and using jemalloc
 # N.B.: The static version of jemalloc is incompatible with the static Swift runtime.
-RUN --mount=type=cache,target=/build/.build \
+RUN --mount=type=cache,target=/build/catscan-server/.build \
+    cd catscan-server && \
     swift build -c release \
         --product CatscanServer \
         --static-swift-stdlib \
         -Xlinker -ljemalloc && \
-    # Copy main executable to staging area
     cp "$(swift build -c release --show-bin-path)/CatscanServer" /staging && \
-    # Copy resources bundled by SPM to staging area
     find -L "$(swift build -c release --show-bin-path)" -regex '.*\.resources$' -exec cp -Ra {} /staging \;
 
 
@@ -46,8 +47,8 @@ RUN cp "/usr/libexec/swift/linux/swift-backtrace-static" ./
 
 # Copy any resources from the public directory and views directory if the directories exist
 # Ensure that by default, neither the directory nor any of its contents are writable.
-RUN [ -d /build/Public ] && { mv /build/Public ./Public && chmod -R a-w ./Public; } || true
-RUN [ -d /build/Resources ] && { mv /build/Resources ./Resources && chmod -R a-w ./Resources; } || true
+RUN [ -d /build/catscan-server/Public ] && { mv /build/catscan-server/Public ./Public && chmod -R a-w ./Public; } || true
+RUN [ -d /build/catscan-server/Resources ] && { mv /build/catscan-server/Resources ./Resources && chmod -R a-w ./Resources; } || true
 
 # ================================
 # Run image
@@ -62,10 +63,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
       libjemalloc2 \
       ca-certificates \
       tzdata \
-# If your app or its dependencies import FoundationNetworking, also install `libcurl4`.
-      # libcurl4 \
-# If your app or its dependencies import FoundationXML, also install `libxml2`.
-      # libxml2 \
+      ffmpeg \
     && rm -r /var/lib/apt/lists/*
 
 # Create a vapor user and group with /app as its home directory

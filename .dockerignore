@@ -1,0 +1,18 @@
+# Swift build artifacts
+catscan-server/.build/
+catscan-server/.swiftpm/
+catscan-shared/.build/
+catscan-shared/.swiftpm/
+
+# iOS app — not needed for server build
+catscan-app/
+
+# Xcode workspace
+*.xcworkspace/
+
+# Runtime data
+catscan-server/db.sqlite
+catscan-server/events/
+
+# Git
+.git/
