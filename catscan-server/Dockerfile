@@ -47,7 +47,7 @@ RUN cp "/usr/libexec/swift/linux/swift-backtrace-static" ./
 
 # Copy any resources from the public directory and views directory if the directories exist
 # Ensure that by default, neither the directory nor any of its contents are writable.
-RUN [ -d /build/catscan-server/Public ] && { mv /build/catscan-server/Public ./Public && chmod -R a-w ./Public; } || true
+RUN [ -d /build/catscan-server/Public ] && { mv /build/catscan-server/Public ./Public && chmod -R a-w ./Public && chmod u+w ./Public/images; } || true
 RUN [ -d /build/catscan-server/Resources ] && { mv /build/catscan-server/Resources ./Resources && chmod -R a-w ./Resources; } || true
 
 # ================================
