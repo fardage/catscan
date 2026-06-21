@@ -30,16 +30,6 @@ struct CatscanServerTests {
         var timestamp: Date?
     }
 
-    @Test("Test Hello World Route")
-    func helloWorld() async throws {
-        try await withApp { app in
-            try await app.testing().test(.GET, "hello", afterResponse: { res async in
-                #expect(res.status == .ok)
-                #expect(res.body.string == "Hello, world!")
-            })
-        }
-    }
-
     @Test("Getting all the flap events")
     func getAllFlapEvents() async throws {
         try await withApp { app in
@@ -63,7 +53,7 @@ struct CatscanServerTests {
             try await app.testing().test(.POST, "flap-events", beforeRequest: { req in
                 try req.content.encode(newEvent)
             }, afterResponse: { res async throws in
-                #expect(res.status == .ok)
+                #expect(res.status == .created)
                 let stored = try await FluentFlapEventRepository(database: app.db).all()
                 #expect(stored.count == 1)
             })
