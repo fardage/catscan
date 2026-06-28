@@ -20,7 +20,7 @@ struct FlapEventDetailView: View {
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .screenBackground()
         .navigationTitle("Flap Event")
         .navigationBarTitleDisplayMode(.inline)
     }

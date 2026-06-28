@@ -17,6 +17,8 @@ struct SettingsView: View {
                 serverSection
                 testSection
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.platinum)
             .navigationTitle("Server Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -55,11 +57,12 @@ struct SettingsView: View {
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                 }
-                .foregroundStyle(.orange)
+                .foregroundStyle(.sunlitClay)
             } else {
                 Text("The address of your Catscan server. Flap events and snapshots are loaded from here.")
             }
         }
+        .listRowBackground(Color.softLinen)
     }
 
     private var testSection: some View {
@@ -88,6 +91,7 @@ struct SettingsView: View {
                 .font(.subheadline)
             }
         }
+        .listRowBackground(Color.softLinen)
     }
 
     // MARK: - Presentation
@@ -100,12 +104,15 @@ struct SettingsView: View {
         case .idle, .testing:
             return nil
         case .success(let count):
-            return ("checkmark.circle.fill", .green, "Connected · ^[\(count) event](inflect: true)")
+            // No green in the brand palette; `gunmetal` reads as a calm,
+            // high-contrast "all good" tick (it flips light in dark mode).
+            return ("checkmark.circle.fill", .gunmetal, "Connected · ^[\(count) event](inflect: true)")
         case .failure(let message):
             // `message` is already self-describing (an unreachable host or a
             // server-side status), so don't hard-code "couldn't connect" — that
             // mislabels a server that answered with an error status.
-            return ("xmark.circle.fill", .red, "Test failed. \(message)")
+            // `vibrantCoral` is the closest the palette has to an alert red.
+            return ("xmark.circle.fill", .vibrantCoral, "Test failed. \(message)")
         }
     }
 }

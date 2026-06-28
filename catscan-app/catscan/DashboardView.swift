@@ -30,7 +30,7 @@ struct DashboardView: View {
                 .padding(.bottom, 32)
                 .containerRelativeFrame(.horizontal)
             }
-            .background(Color(.systemGroupedBackground))
+            .screenBackground()
             .navigationTitle("Summary")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -84,11 +84,11 @@ struct DashboardView: View {
     private var statsSection: some View {
         HStack(spacing: 12) {
             StatCard(title: "Today", value: viewModel.todayCount,
-                     systemImage: "sun.max.fill", tint: .orange)
+                     systemImage: "sun.max.fill", tint: .sunlitClay)
             StatCard(title: "This Week", value: viewModel.weekCount,
-                     systemImage: "calendar", tint: .blue)
+                     systemImage: "calendar", tint: .vibrantCoral)
             StatCard(title: "Total", value: viewModel.totalCount,
-                     systemImage: "pawprint.fill", tint: .green)
+                     systemImage: "pawprint.fill", tint: .gunmetal)
         }
     }
 
@@ -160,7 +160,7 @@ private struct LatestSnapshotCard: View {
             HStack {
                 Label("Latest Snapshot", systemImage: "camera.fill")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.vibrantCoral)
                 Spacer()
                 if let event {
                     Text(event.timestamp.formatted(.relative(presentation: .named)))

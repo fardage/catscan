@@ -43,12 +43,20 @@ enum AppEnvironment {
 }
 
 extension View {
-    /// Grouped card: rounded, filled with the secondary
-    /// grouped background so it lifts off `systemGroupedBackground`.
+    /// Grouped card: rounded, filled with `softLinen` (a warm near-white) so it
+    /// lifts off the slightly darker `platinum` grey screen base — the same
+    /// white-card-on-grey relationship UIKit's grouped backgrounds use, in both
+    /// light and dark appearances.
     func cardStyle(cornerRadius: CGFloat = 16) -> some View {
         background(
-            Color(.secondarySystemGroupedBackground),
+            Color.softLinen,
             in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         )
+    }
+
+    /// Screen base: the `platinum` grey grouped background that `cardStyle`
+    /// cards lift off of. Centralized so the app's screens can't drift apart.
+    func screenBackground() -> some View {
+        background(Color.platinum)
     }
 }

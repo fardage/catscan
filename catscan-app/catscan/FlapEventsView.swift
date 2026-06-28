@@ -38,7 +38,7 @@ struct FlapEventsView: View {
                 .padding()
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .screenBackground()
         .navigationTitle("Activity")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await viewModel.load() }
