@@ -14,7 +14,8 @@ struct StorageConfiguration {
 
     init(workingDirectory: String) {
         let base = URL(fileURLWithPath: workingDirectory)
-        databasePath = Environment.get("DATABASE_PATH") ?? "db.sqlite"
+        databasePath = Environment.get("DATABASE_PATH")
+            ?? base.appendingPathComponent("db.sqlite").path
         eventsDirectory = Environment.get("EVENTS_DIR").map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? base.appendingPathComponent("events", isDirectory: true)
         imagesDirectory = Environment.get("IMAGES_DIR").map { URL(fileURLWithPath: $0, isDirectory: true) }

@@ -12,7 +12,10 @@ public struct FluentFlapEventRepository: FlapEventRepository {
     }
 
     public func all() async throws -> [FlapEvent] {
-        try await FlapEventModel.query(on: database).all().map { $0.toEntity() }
+        try await FlapEventModel.query(on: database)
+            .sort(\.$timestamp, .descending)
+            .all()
+            .map { $0.toEntity() }
     }
 
     public func create(_ event: FlapEvent) async throws -> FlapEvent {

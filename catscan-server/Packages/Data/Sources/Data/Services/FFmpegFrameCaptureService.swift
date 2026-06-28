@@ -121,6 +121,9 @@ private struct FrameScanner {
     // DateFormatter is not thread-safe, but FrameScanner is always driven from a single Task.
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
+        // POSIX locale so the fixed numeric format stays stable regardless of the
+        // host locale (non-Gregorian calendars / non-ASCII digits otherwise).
+        f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         return f
     }()
@@ -148,29 +151,50 @@ private struct FrameScanner {
                 continue
             }
             pendingSizes[name] = nil
-            emitted.insert(name)
 
             let fileDate = attrs[.modificationDate] as? Date ?? Date()
-            let imagePath = copyToImages(from: url, date: fileDate)
-            frames.append(CapturedFrame(url: url, index: frameIndex(from: name), detectedAt: fileDate, imagePath: imagePath))
+            let result = copyToImages(from: url, date: fileDate)
+            // Only remember files we could not delete. Once the staging file is
+            // gone it can never be re-listed, so tracking it would grow `emitted`
+            // unbounded for the lifetime of the capture.
+            if !result.stagingRemoved {
+                emitted.insert(name)
+            }
+            frames.append(CapturedFrame(url: url, index: frameIndex(from: name), detectedAt: fileDate, imagePath: result.path))
         }
         return frames
     }
 
-    /// Copies the staging frame into `imagesDirectory` with a timestamp name and
-    /// deletes the original. Returns the destination path, or `nil` on failure.
-    private func copyToImages(from url: URL, date: Date) -> String? {
+    /// Copies the staging frame into `imagesDirectory` under a timestamp name and
+    /// deletes the original. Returns the destination path (`nil` on copy failure)
+    /// and whether the staging file was removed.
+    private func copyToImages(from url: URL, date: Date) -> (path: String?, stagingRemoved: Bool) {
         let ms = Int(date.timeIntervalSince1970.truncatingRemainder(dividingBy: 1) * 1000)
-        let name = String(format: "%@.%03d%@", Self.dateFormatter.string(from: date), ms, suffix)
-        let destination = imagesDirectory.appendingPathComponent(name)
+        let base = String(format: "%@.%03d", Self.dateFormatter.string(from: date), ms)
         do {
             try fileManager.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
+            // Two frames can land in the same millisecond; disambiguate so the
+            // copy never collides (a collision would drop the image and leave the
+            // staging file orphaned on disk).
+            let destination = uniqueDestination(base: base)
             try fileManager.copyItem(at: url, to: destination)
-            try? fileManager.removeItem(at: url)
-            return destination.path
+            let stagingRemoved = (try? fileManager.removeItem(at: url)) != nil
+            return (destination.path, stagingRemoved)
         } catch {
-            return nil
+            return (nil, false)
         }
+    }
+
+    /// Returns a path in `imagesDirectory` that does not yet exist, appending a
+    /// counter to `base` if a file with that name is already present.
+    private func uniqueDestination(base: String) -> URL {
+        var candidate = imagesDirectory.appendingPathComponent(base + suffix)
+        var counter = 1
+        while fileManager.fileExists(atPath: candidate.path) {
+            candidate = imagesDirectory.appendingPathComponent("\(base)-\(counter)\(suffix)")
+            counter += 1
+        }
+        return candidate
     }
 
     /// Parses the trailing run of digits from a frame filename

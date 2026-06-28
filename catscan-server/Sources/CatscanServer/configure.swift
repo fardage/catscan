@@ -22,10 +22,14 @@ public func configure(_ app: Application) async throws {
         LiveRepositoryProvider(database: req.db)
     }
 
+    // Ensure the schema exists whether or not camera capture is enabled, so the
+    // HTTP API works on a plain `swift run` / `serve`. Migrations are idempotent,
+    // so it is safe even when the test harness calls autoMigrate again.
+    try await app.autoMigrate()
+
     // Camera capture only runs when CAMERA_RTSP_URL is configured, so tests and
     // local runs don't spawn a subprocess.
     if let source = Environment.get("CAMERA_RTSP_URL") {
-        try await app.autoMigrate()
         app.lifecycle.use(FrameCaptureLifecycleHandler(configuration: FFmpegCaptureConfiguration(
             source: source,
             outputDirectory: storage.eventsDirectory,

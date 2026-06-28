@@ -63,20 +63,34 @@ final class FrameCaptureLifecycleHandler: LifecycleHandler {
         while !Task.isCancelled {
             do {
                 for try await frame in service.capture() {
-                    let event = try await createEvent.execute(FlapEvent(timestamp: frame.detectedAt, imagePath: frame.imagePath))
-                    logger.info("Recorded flap event", metadata: [
-                        "frame": .string(frame.url.lastPathComponent),
-                        "eventID": .string(event.id?.uuidString ?? "?"),
-                    ])
+                    do {
+                        let event = try await createEvent.execute(FlapEvent(timestamp: frame.detectedAt, imagePath: frame.imagePath))
+                        logger.info("Recorded flap event", metadata: [
+                            "frame": .string(frame.url.lastPathComponent),
+                            "eventID": .string(event.id?.uuidString ?? "?"),
+                        ])
+                    } catch {
+                        // A failed persist must not tear down the live capture;
+                        // log and drop this one frame instead of reconnecting.
+                        logger.error("Failed to persist flap event; skipping frame", metadata: [
+                            "frame": .string(frame.url.lastPathComponent),
+                            "error": .string(String(describing: error)),
+                        ])
+                    }
                 }
-                // Stream finished cleanly — only happens on cancellation.
+                // The stream finished without throwing. With a live feed that only
+                // happens on cancellation, but a source that ends (EOF/finite)
+                // makes ffmpeg exit 0 too, so fall through to the backoff below
+                // rather than spinning in a tight reconnect loop.
+                if Task.isCancelled { break }
+                logger.notice("Frame capture ended; reconnecting")
             } catch {
                 guard !Task.isCancelled else { break }
                 logger.error("Frame capture failed; reconnecting", metadata: [
                     "error": .string(String(describing: error)),
                 ])
-                try? await Task.sleep(for: retryDelay)
             }
+            try? await Task.sleep(for: retryDelay)
         }
     }
 }
