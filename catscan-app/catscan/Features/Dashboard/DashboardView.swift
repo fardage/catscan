@@ -22,6 +22,7 @@ struct DashboardView: View {
                         .textCase(.uppercase)
                         .padding(.top, 4)
 
+                    liveStreamCard
                     heroCard
                     statsSection
                     recentActivitySection
@@ -53,7 +54,7 @@ struct DashboardView: View {
                 }
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView()
+                SettingsView(store: viewModel.settings)
             }
             .refreshable { await viewModel.load() }
             .task {
@@ -62,19 +63,44 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: - Live stream
+
+    /// Shows the camera's live feed when a stream URL is configured; renders
+    /// nothing otherwise so the dashboard collapses cleanly.
+    @ViewBuilder
+    private var liveStreamCard: some View {
+        if let url = viewModel.settings.streamURL {
+            VStack(alignment: .leading, spacing: 0) {
+                Label(L10n.Dashboard.liveStream, systemImage: "dot.radiowaves.left.and.right")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.vibrantCoral)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+
+                LiveStreamView(url: url, isActive: !showingSettings)
+                    .frame(height: 220)
+                    .clipped()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .cardStyle()
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
     // MARK: - Hero
 
     @ViewBuilder
     private var heroCard: some View {
         if let event = viewModel.latestEventWithImage {
+            let imageURL = viewModel.settings.imageURL(for: event.imagePath)
             NavigationLink {
-                FlapEventDetailView(event: event)
+                FlapEventDetailView(event: event, imageURL: imageURL)
             } label: {
-                LatestSnapshotCard(event: event)
+                LatestSnapshotCard(event: event, imageURL: imageURL)
             }
             .buttonStyle(.plain)
         } else {
-            LatestSnapshotCard(event: nil, isLoading: viewModel.isLoading,
+            LatestSnapshotCard(event: nil, imageURL: nil, isLoading: viewModel.isLoading,
                                loadFailed: viewModel.loadFailed)
         }
     }
@@ -113,7 +139,7 @@ struct DashboardView: View {
             if viewModel.events.isEmpty {
                 emptyActivityCard
             } else {
-                EventListCard(events: viewModel.recentEvents)
+                EventListCard(viewModel: viewModel, events: viewModel.recentEvents)
             }
         }
     }
@@ -150,6 +176,7 @@ struct DashboardView: View {
 /// Large highlight card showing the most recent captured snapshot.
 private struct LatestSnapshotCard: View {
     let event: FlapEvent?
+    let imageURL: URL?
     var isLoading: Bool = false
     var loadFailed: Bool = false
 
@@ -171,7 +198,7 @@ private struct LatestSnapshotCard: View {
 
             ZStack(alignment: .bottomLeading) {
                 if let event {
-                    RemoteImageView(url: AppEnvironment.imageURL(for: event.imagePath))
+                    RemoteImageView(url: imageURL)
                         .frame(height: 220)
                         .clipped()
 

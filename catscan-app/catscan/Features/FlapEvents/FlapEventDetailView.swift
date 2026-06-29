@@ -4,8 +4,7 @@ import CatscanAPI
 /// Detail for a single flap event: the full snapshot plus its metadata.
 struct FlapEventDetailView: View {
     let event: FlapEvent
-
-    private var imageURL: URL? { AppEnvironment.imageURL(for: event.imagePath) }
+    let imageURL: URL?
 
     var body: some View {
         ScrollView {
@@ -70,7 +69,8 @@ struct FlapEventDetailView: View {
 #Preview {
     NavigationStack {
         FlapEventDetailView(
-            event: FlapEvent(id: UUID().uuidString, timestamp: .now, imagePath: "/images/sample.jpg")
+            event: FlapEvent(id: UUID().uuidString, timestamp: .now, imagePath: "/images/sample.jpg"),
+            imageURL: nil
         )
     }
 }

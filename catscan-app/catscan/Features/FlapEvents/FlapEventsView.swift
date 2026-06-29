@@ -31,7 +31,7 @@ struct FlapEventsView: View {
                             }
                             .padding(.horizontal, 4)
 
-                            EventListCard(events: group.events)
+                            EventListCard(viewModel: viewModel, events: group.events)
                         }
                     }
                 }

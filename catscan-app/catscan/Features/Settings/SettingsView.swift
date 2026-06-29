@@ -7,14 +7,15 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @MainActor
-    init(viewModel: SettingsViewModel? = nil) {
-        _viewModel = State(initialValue: viewModel ?? SettingsViewModel())
+    init(store: SettingsStore, viewModel: SettingsViewModel? = nil) {
+        _viewModel = State(initialValue: viewModel ?? SettingsViewModel(store: store))
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 serverSection
+                streamSection
                 testSection
             }
             .scrollContentBackground(.hidden)
@@ -60,6 +61,34 @@ struct SettingsView: View {
                 .foregroundStyle(.sunlitClay)
             } else {
                 Text(L10n.Settings.serverURLFooter)
+            }
+        }
+        .listRowBackground(Color.softLinen)
+    }
+
+    private var streamSection: some View {
+        Section {
+            TextField(text: $viewModel.streamDraft,
+                      prompt: Text(verbatim: "https://camera.example.com/live/index.m3u8")) {
+                Text(L10n.Settings.streamURL)
+            }
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .textContentType(.URL)
+        } header: {
+            Text(L10n.Settings.streamURL)
+        } footer: {
+            // The field is optional, so only warn when it has invalid content.
+            if !viewModel.streamDraftIsEmpty && viewModel.normalizedStreamURL == nil {
+                Label {
+                    Text(L10n.Settings.invalidURLFooter)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
+                .foregroundStyle(.sunlitClay)
+            } else {
+                Text(L10n.Settings.streamURLFooter)
             }
         }
         .listRowBackground(Color.softLinen)
@@ -119,6 +148,6 @@ struct SettingsView: View {
 
 #if DEBUG
 #Preview {
-    SettingsView()
+    SettingsView(store: .preview())
 }
 #endif

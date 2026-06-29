@@ -9,10 +9,14 @@ final class FlapEventsViewModel {
     private(set) var isLoading = false
     private(set) var loadFailed = false
 
+    /// App settings (server / stream URLs). Used by the views this model backs to
+    /// resolve snapshot image URLs and the live-stream URL.
+    let settings: SettingsStore
     private let repository: any FlapEventRepository
 
-    nonisolated init(repository: any FlapEventRepository) {
+    nonisolated init(repository: any FlapEventRepository, settings: SettingsStore) {
         self.repository = repository
+        self.settings = settings
     }
 
     // MARK: - Loading
@@ -97,7 +101,10 @@ extension FlapEventsViewModel {
                 imagePath: i % 4 == 0 ? nil : "/images/sample-\(i).jpg"
             )
         }
-        let viewModel = FlapEventsViewModel(repository: PreviewFlapEventRepository(events: sample))
+        let viewModel = FlapEventsViewModel(
+            repository: PreviewFlapEventRepository(events: sample),
+            settings: .preview()
+        )
         viewModel.events = sample.sorted { $0.timestamp > $1.timestamp }
         return viewModel
     }

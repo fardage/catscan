@@ -147,10 +147,11 @@ actor ImageCache {
 /// Shared between the dashboard's "Recent Activity" list and the full history.
 struct EventRow: View {
     let event: FlapEvent
+    let imageURL: URL?
 
     var body: some View {
         HStack(spacing: 12) {
-            RemoteImageView(url: AppEnvironment.imageURL(for: event.imagePath))
+            RemoteImageView(url: imageURL)
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
@@ -179,15 +180,17 @@ struct EventRow: View {
 /// event's detail. Shared by the dashboard's "Recent Activity" preview and the
 /// full history's day sections so the row layout lives in one place.
 struct EventListCard: View {
+    let viewModel: FlapEventsViewModel
     let events: [FlapEvent]
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                let imageURL = viewModel.settings.imageURL(for: event.imagePath)
                 NavigationLink {
-                    FlapEventDetailView(event: event)
+                    FlapEventDetailView(event: event, imageURL: imageURL)
                 } label: {
-                    EventRow(event: event)
+                    EventRow(event: event, imageURL: imageURL)
                 }
                 .buttonStyle(.plain)
 

@@ -6,20 +6,23 @@ import Observation
 final class SettingsViewModel {
     /// The editable server-URL text bound to the field.
     var draft: String
+    /// The editable live-stream URL text. Optional, so an empty value is valid.
+    var streamDraft: String
     private(set) var testState: TestState = .idle
 
-    private let defaults: UserDefaults
+    private let store: SettingsStore
     private let makeRepository: @Sendable (URL) -> any FlapEventRepository
 
     init(
-        defaults: UserDefaults = .standard,
+        store: SettingsStore,
         makeRepository: @escaping @Sendable (URL) -> any FlapEventRepository = {
             RemoteFlapEventRepository(serverURL: $0)
         }
     ) {
-        self.defaults = defaults
+        self.store = store
         self.makeRepository = makeRepository
-        self.draft = defaults.string(forKey: AppEnvironment.serverURLKey) ?? ""
+        self.draft = store.serverURLString
+        self.streamDraft = store.streamURLString
     }
 
     // MARK: - Validation
@@ -27,7 +30,17 @@ final class SettingsViewModel {
     /// The validated, normalized URL for the current draft, or `nil` if invalid.
     var normalizedURL: URL? { AppEnvironment.normalizedURL(from: draft) }
 
-    var canSave: Bool { normalizedURL != nil }
+    /// The normalized live-stream URL, or `nil` when the field is empty or invalid.
+    var normalizedStreamURL: URL? { AppEnvironment.normalizedURL(from: streamDraft) }
+
+    /// Whether the (optional) stream field is empty after trimming whitespace.
+    var streamDraftIsEmpty: Bool {
+        streamDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    // The server URL is required; the stream URL is optional but, when present,
+    // must be valid.
+    var canSave: Bool { normalizedURL != nil && (streamDraftIsEmpty || normalizedStreamURL != nil) }
     var canTest: Bool { normalizedURL != nil && !testState.isTesting }
 
     // MARK: - Actions
@@ -37,11 +50,20 @@ final class SettingsViewModel {
         testState = .idle
     }
 
-    /// Persists the normalized URL. Returns `true` when saved so the caller can dismiss.
+    /// Persists the normalized server URL and the optional stream URL. Returns
+    /// `true` when saved so the caller can dismiss.
     @discardableResult
     func save() -> Bool {
         guard let url = normalizedURL else { return false }
-        defaults.set(url.absoluteString, forKey: AppEnvironment.serverURLKey)
+        store.serverURLString = url.absoluteString
+        // An empty stream field clears the setting (hides the dashboard's live
+        // card; the store drops emptied values from `UserDefaults`). A non-empty
+        // but invalid draft leaves the stored value untouched rather than wiping it.
+        if streamDraftIsEmpty {
+            store.streamURLString = ""
+        } else if let streamURL = normalizedStreamURL {
+            store.streamURLString = streamURL.absoluteString
+        }
         return true
     }
 

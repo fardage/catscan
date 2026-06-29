@@ -18,28 +18,8 @@ private func event(_ id: String, _ timestamp: Date, image: String? = nil) -> Fla
     FlapEvent(id: id, timestamp: timestamp, imagePath: image)
 }
 
-/// Sets `UserDefaults.standard`'s server URL for the duration of `body`, then
-/// restores whatever was there before (so these tests never leak state).
-private func withServerURL(_ value: String?, _ body: () -> Void) {
-    let key = AppEnvironment.serverURLKey
-    let original = UserDefaults.standard.string(forKey: key)
-    defer {
-        if let original {
-            UserDefaults.standard.set(original, forKey: key)
-        } else {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-    }
-    if let value {
-        UserDefaults.standard.set(value, forKey: key)
-    } else {
-        UserDefaults.standard.removeObject(forKey: key)
-    }
-    body()
-}
-
-/// A throwaway, empty `UserDefaults` suite so a view model's draft starts clean
-/// and `save()` doesn't touch the shared standard defaults.
+/// A throwaway, empty `UserDefaults` suite that backs a `SettingsStore` so tests
+/// start clean and never touch the shared standard defaults.
 private func isolatedDefaults() -> UserDefaults {
     let name = "catscanTests.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: name)!
@@ -78,38 +58,64 @@ struct AppEnvironmentURLTests {
     }
 }
 
-// MARK: - AppEnvironment.imageURL
-// Serialized because these mutate UserDefaults.standard (which serverURL reads).
+// MARK: - SettingsStore.imageURL
 
-@Suite(.serialized)
-struct AppEnvironmentImageURLTests {
+@MainActor
+struct SettingsStoreImageURLTests {
+    private func store(server: String = "") -> SettingsStore {
+        let store = SettingsStore(defaults: isolatedDefaults())
+        store.serverURLString = server
+        return store
+    }
+
     @Test func returnsNilWhenNoServerConfigured() {
-        withServerURL(nil) {
-            #expect(AppEnvironment.imageURL(for: "/images/x.jpg") == nil)
-        }
+        #expect(store().imageURL(for: "/images/x.jpg") == nil)
     }
 
     @Test func returnsNilForMissingOrEmptyPath() {
-        withServerURL("https://host.example") {
-            #expect(AppEnvironment.imageURL(for: nil) == nil)
-            #expect(AppEnvironment.imageURL(for: "") == nil)
-        }
+        let store = store(server: "https://host.example")
+        #expect(store.imageURL(for: nil) == nil)
+        #expect(store.imageURL(for: "") == nil)
     }
 
     @Test func resolvesAgainstServerRoot() {
-        withServerURL("https://host.example") {
-            #expect(AppEnvironment.imageURL(for: "/images/x.jpg")?.absoluteString
-                    == "https://host.example/images/x.jpg")
-        }
+        #expect(store(server: "https://host.example").imageURL(for: "/images/x.jpg")?.absoluteString
+                == "https://host.example/images/x.jpg")
     }
 
     @Test func preservesConfiguredSubpath() {
         // Regression guard: an absolute imagePath must not drop the server's
         // base path (otherwise images diverge from where the API client looks).
-        withServerURL("https://host.example/catscan") {
-            #expect(AppEnvironment.imageURL(for: "/images/x.jpg")?.absoluteString
-                    == "https://host.example/catscan/images/x.jpg")
-        }
+        #expect(store(server: "https://host.example/catscan").imageURL(for: "/images/x.jpg")?.absoluteString
+                == "https://host.example/catscan/images/x.jpg")
+    }
+}
+
+// MARK: - SettingsStore persistence
+
+@MainActor
+struct SettingsStoreTests {
+    @Test func persistsAndReloadsFromDefaults() {
+        let defaults = isolatedDefaults()
+        let store = SettingsStore(defaults: defaults)
+        store.serverURLString = "https://host.example"
+        store.streamURLString = "https://cam.example/index.m3u8"
+
+        // A fresh store over the same suite sees the persisted values.
+        let reloaded = SettingsStore(defaults: defaults)
+        #expect(reloaded.serverURLString == "https://host.example")
+        #expect(reloaded.streamURLString == "https://cam.example/index.m3u8")
+    }
+
+    @Test func clearingAValueRemovesItFromDefaults() {
+        let defaults = isolatedDefaults()
+        let store = SettingsStore(defaults: defaults)
+        store.streamURLString = "https://cam.example/index.m3u8"
+        store.streamURLString = "   "   // emptied by the user
+
+        let reloaded = SettingsStore(defaults: defaults)
+        #expect(reloaded.streamURLString == "")
+        #expect(reloaded.streamURL == nil)
     }
 }
 
@@ -118,7 +124,10 @@ struct AppEnvironmentImageURLTests {
 @MainActor
 struct FlapEventsViewModelTests {
     private func loaded(_ events: [FlapEvent]) async -> FlapEventsViewModel {
-        let viewModel = FlapEventsViewModel(repository: PreviewFlapEventRepository(events: events))
+        let viewModel = FlapEventsViewModel(
+            repository: PreviewFlapEventRepository(events: events),
+            settings: SettingsStore(defaults: isolatedDefaults())
+        )
         await viewModel.load()
         return viewModel
     }
@@ -217,7 +226,7 @@ struct FlapEventsViewModelTests {
 struct SettingsViewModelTests {
     @Test func testConnectionSuccessReportsEventCount() async {
         let viewModel = SettingsViewModel(
-            defaults: isolatedDefaults(),
+            store: SettingsStore(defaults: isolatedDefaults()),
             makeRepository: { _ in
                 PreviewFlapEventRepository(events: [
                     event("1", .now), event("2", .now), event("3", .now),
@@ -236,7 +245,7 @@ struct SettingsViewModelTests {
 
     @Test func testConnectionFailureSurfacesLocalizedMessage() async {
         let viewModel = SettingsViewModel(
-            defaults: isolatedDefaults(),
+            store: SettingsStore(defaults: isolatedDefaults()),
             makeRepository: { _ in FailingRepository() }
         )
         viewModel.draft = "https://example.com"
@@ -252,7 +261,7 @@ struct SettingsViewModelTests {
     @Test func testConnectionDiscardsResultWhenDraftChangesMidFlight() async {
         let gate = Gate()
         let viewModel = SettingsViewModel(
-            defaults: isolatedDefaults(),
+            store: SettingsStore(defaults: isolatedDefaults()),
             makeRepository: { _ in GatedRepository(count: 7, gate: gate) }
         )
         viewModel.draft = "https://a.example"
@@ -272,17 +281,18 @@ struct SettingsViewModelTests {
     }
 
     @Test func saveNormalizesAndPersists() {
-        let defaults = isolatedDefaults()
-        let viewModel = SettingsViewModel(defaults: defaults)
+        let store = SettingsStore(defaults: isolatedDefaults())
+        let viewModel = SettingsViewModel(store: store)
         viewModel.draft = "example.com"
 
         #expect(viewModel.canSave)
         #expect(viewModel.save())
-        #expect(defaults.string(forKey: AppEnvironment.serverURLKey) == "https://example.com")
+        #expect(store.serverURLString == "https://example.com")
+        #expect(store.serverURL?.absoluteString == "https://example.com")
     }
 
     @Test func cannotSaveInvalidDraft() {
-        let viewModel = SettingsViewModel(defaults: isolatedDefaults())
+        let viewModel = SettingsViewModel(store: SettingsStore(defaults: isolatedDefaults()))
         viewModel.draft = "   "
 
         #expect(!viewModel.canSave)

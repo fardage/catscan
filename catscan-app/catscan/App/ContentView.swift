@@ -8,18 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage(AppEnvironment.serverURLKey)
-    private var serverURLString = ""
+    let settings: SettingsStore
     @State private var showingSettings = false
 
     var body: some View {
-        if let url = AppEnvironment.normalizedURL(from: serverURLString) {
+        if let url = settings.serverURL {
             // Rebuild the dashboard (and its view model / repository) whenever the
             // configured server changes, so data reloads from the new URL.
             DashboardView(
-                viewModel: FlapEventsViewModel(repository: RemoteFlapEventRepository(serverURL: url))
+                viewModel: FlapEventsViewModel(
+                    repository: RemoteFlapEventRepository(serverURL: url),
+                    settings: settings
+                )
             )
-            .id(serverURLString)
+            .id(settings.serverURLString)
         } else {
             unconfigured
         }
@@ -35,11 +37,11 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView()
+            SettingsView(store: settings)
         }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(settings: .preview(serverURL: "https://catscan.example.com"))
 }

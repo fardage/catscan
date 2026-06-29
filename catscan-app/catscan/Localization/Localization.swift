@@ -29,6 +29,10 @@ enum L10n {
         static let activityUnreachable: LocalizedStringKey = "Couldn't reach your Catscan server. Pull to refresh to try again."
         static let noActivity: LocalizedStringKey = "No flap events yet. They'll appear here as your cat comes and goes."
 
+        static let liveStream: LocalizedStringKey = "Live"
+        static let streamLoading: LocalizedStringKey = "Connecting to live stream…"
+        static let streamUnavailable: LocalizedStringKey = "Live stream unavailable. Tap to retry."
+
         static let latestSnapshot: LocalizedStringKey = "Latest Snapshot"
         static let lastSeen: LocalizedStringKey = "Last seen"
 
@@ -74,6 +78,8 @@ enum L10n {
         static let serverURL: LocalizedStringKey = "Server URL"
         static let serverURLFooter: LocalizedStringKey = "The address of your Catscan server. Flap events and snapshots are loaded from here."
         static let invalidURLFooter: LocalizedStringKey = "Enter a valid URL, e.g. https://catscan.example.com"
+        static let streamURL: LocalizedStringKey = "Live Stream URL"
+        static let streamURLFooter: LocalizedStringKey = "Optional HLS (.m3u8) stream from your camera, shown live on the dashboard."
         static let testConnection: LocalizedStringKey = "Test Connection"
 
         /// "Connected · 5 events" success status, count inflected per language.

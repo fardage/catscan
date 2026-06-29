@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct catscanApp: App {
+    /// The app-wide settings store, created once and injected down the view tree.
+    @State private var settings = SettingsStore()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(settings: settings)
         }
     }
 }
