@@ -27,11 +27,11 @@ struct ContentView: View {
 
     private var unconfigured: some View {
         ContentUnavailableView {
-            Label("No Server Configured", systemImage: "server.rack")
+            Label(L10n.Unconfigured.title, systemImage: "server.rack")
         } description: {
-            Text("Add your Catscan server's address to start seeing your cat's flap events.")
+            Text(L10n.Unconfigured.description)
         } actions: {
-            Button("Configure Server") { showingSettings = true }
+            Button(L10n.Unconfigured.configure) { showingSettings = true }
                 .buttonStyle(.borderedProminent)
         }
         .sheet(isPresented: $showingSettings) {

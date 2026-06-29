@@ -31,19 +31,19 @@ struct DashboardView: View {
                 .containerRelativeFrame(.horizontal)
             }
             .screenBackground()
-            .navigationTitle("Summary")
+            .navigationTitle(L10n.Dashboard.title)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
                             Task { await viewModel.load() }
                         } label: {
-                            Label("Refresh", systemImage: "arrow.clockwise")
+                            Label(L10n.Dashboard.refresh, systemImage: "arrow.clockwise")
                         }
                         Button {
                             showingSettings = true
                         } label: {
-                            Label("Server Settings", systemImage: "server.rack")
+                            Label(L10n.Dashboard.serverSettings, systemImage: "server.rack")
                         }
                     } label: {
                         Image(systemName: "person.crop.circle")
@@ -83,11 +83,11 @@ struct DashboardView: View {
 
     private var statsSection: some View {
         HStack(spacing: 12) {
-            StatCard(title: "Today", value: viewModel.todayCount,
+            StatCard(title: L10n.Dashboard.statToday, value: viewModel.todayCount,
                      systemImage: "sun.max.fill", tint: .sunlitClay)
-            StatCard(title: "This Week", value: viewModel.weekCount,
+            StatCard(title: L10n.Dashboard.statThisWeek, value: viewModel.weekCount,
                      systemImage: "calendar", tint: .vibrantCoral)
-            StatCard(title: "Total", value: viewModel.totalCount,
+            StatCard(title: L10n.Dashboard.statTotal, value: viewModel.totalCount,
                      systemImage: "pawprint.fill", tint: .gunmetal)
         }
     }
@@ -97,14 +97,14 @@ struct DashboardView: View {
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Recent Activity")
+                Text(L10n.Dashboard.recentActivity)
                     .font(.title3.bold())
                 Spacer()
                 if !viewModel.events.isEmpty {
                     NavigationLink {
                         FlapEventsView(viewModel: viewModel)
                     } label: {
-                        Text("Show All")
+                        Text(L10n.Dashboard.showAll)
                             .font(.subheadline.weight(.semibold))
                     }
                 }
@@ -138,12 +138,10 @@ struct DashboardView: View {
         return viewModel.loadFailed ? "wifi.exclamationmark" : "pawprint"
     }
 
-    private var emptyActivityMessage: String {
-        if viewModel.isLoading { return "Loading recent activity…" }
-        if viewModel.loadFailed {
-            return "Couldn't reach your Catscan server. Pull to refresh to try again."
-        }
-        return "No flap events yet. They'll appear here as your cat comes and goes."
+    private var emptyActivityMessage: LocalizedStringKey {
+        if viewModel.isLoading { return L10n.Dashboard.loadingActivity }
+        if viewModel.loadFailed { return L10n.Dashboard.activityUnreachable }
+        return L10n.Dashboard.noActivity
     }
 }
 
@@ -158,7 +156,7 @@ private struct LatestSnapshotCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Label("Latest Snapshot", systemImage: "camera.fill")
+                Label(L10n.Dashboard.latestSnapshot, systemImage: "camera.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.vibrantCoral)
                 Spacer()
@@ -184,7 +182,7 @@ private struct LatestSnapshotCard: View {
                     )
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Last seen")
+                        Text(L10n.Dashboard.lastSeen)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.8))
                         Text(event.timestamp.formatted(date: .abbreviated, time: .shortened))
@@ -218,9 +216,9 @@ private struct LatestSnapshotCard: View {
         return loadFailed ? "wifi.exclamationmark" : "cat"
     }
 
-    private var placeholderMessage: String {
-        if isLoading { return "Loading…" }
-        return loadFailed ? "Couldn't load snapshot" : "No snapshots yet"
+    private var placeholderMessage: LocalizedStringKey {
+        if isLoading { return L10n.Dashboard.snapshotLoading }
+        return loadFailed ? L10n.Dashboard.snapshotLoadFailed : L10n.Dashboard.noSnapshots
     }
 }
 
@@ -228,7 +226,7 @@ private struct LatestSnapshotCard: View {
 
 /// Compact Health-style metric tile: tinted icon, big number, unit caption.
 private struct StatCard: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: Int
     let systemImage: String
     let tint: Color
@@ -248,7 +246,7 @@ private struct StatCard: View {
                 .contentTransition(.numericText())
                 .animation(.snappy, value: value)
 
-            Text(value == 1 ? "visit" : "visits")
+            Text(L10n.Dashboard.visitUnit(value))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

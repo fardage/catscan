@@ -21,28 +21,36 @@ struct FlapEventDetailView: View {
             .padding()
         }
         .screenBackground()
-        .navigationTitle("Flap Event")
+        .navigationTitle(L10n.EventDetail.title)
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var metadataCard: some View {
         VStack(spacing: 0) {
-            detailRow("Date", value: event.timestamp.formatted(date: .complete, time: .omitted))
+            detailRow(L10n.EventDetail.date,
+                      value: Text(event.timestamp.formatted(date: .complete, time: .omitted)))
             Divider().padding(.leading, 16)
-            detailRow("Time", value: event.timestamp.formatted(date: .omitted, time: .standard))
+            detailRow(L10n.EventDetail.time,
+                      value: Text(event.timestamp.formatted(date: .omitted, time: .standard)))
             Divider().padding(.leading, 16)
-            detailRow("Captured", value: event.timestamp.formatted(.relative(presentation: .named)))
+            detailRow(L10n.EventDetail.captured,
+                      value: Text(event.timestamp.formatted(.relative(presentation: .named))))
             Divider().padding(.leading, 16)
-            detailRow("Snapshot", value: event.imagePath == nil ? "None" : "Available")
+            detailRow(L10n.EventDetail.snapshot,
+                      value: Text(event.imagePath == nil ? L10n.EventDetail.snapshotNone
+                                                         : L10n.EventDetail.snapshotAvailable))
             Divider().padding(.leading, 16)
-            detailRow("Event ID", value: shortID)
+            detailRow(L10n.EventDetail.eventID, value: Text(shortID))
         }
         .cardStyle()
     }
 
-    private func detailRow(_ title: String, value: String) -> some View {
+    /// One metadata row. `title` is a localized label; `value` is passed as a
+    /// `Text` so callers control whether it's localized (e.g. snapshot status)
+    /// or rendered verbatim (already-formatted dates, the event ID).
+    private func detailRow(_ title: LocalizedStringKey, value: Text) -> some View {
         LabeledContent {
-            Text(value)
+            value
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.trailing)
         } label: {

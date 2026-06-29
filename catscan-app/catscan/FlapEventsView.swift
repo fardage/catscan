@@ -9,12 +9,12 @@ struct FlapEventsView: View {
         ScrollView {
             if viewModel.events.isEmpty {
                 ContentUnavailableView {
-                    Label(viewModel.loadFailed ? "Couldn't Load Activity" : "No Activity",
+                    Label(viewModel.loadFailed ? L10n.Activity.failedTitle : L10n.Activity.emptyTitle,
                           systemImage: viewModel.loadFailed ? "wifi.exclamationmark" : "pawprint")
                 } description: {
                     Text(viewModel.loadFailed
-                         ? "We couldn't reach your Catscan server. Pull to refresh to try again."
-                         : "Flap events will appear here as your cat comes and goes.")
+                         ? L10n.Activity.failedDescription
+                         : L10n.Activity.emptyDescription)
                 }
                 .padding(.top, 80)
             } else {
@@ -22,10 +22,10 @@ struct FlapEventsView: View {
                     ForEach(viewModel.eventsByDay) { group in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(Self.dayLabel(for: group.day))
+                                Self.dayLabel(for: group.day)
                                     .font(.headline)
                                 Spacer()
-                                Text("^[\(group.events.count) visit](inflect: true)")
+                                Text(L10n.Activity.visitCount(group.events.count))
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -39,16 +39,19 @@ struct FlapEventsView: View {
             }
         }
         .screenBackground()
-        .navigationTitle("Activity")
+        .navigationTitle(L10n.Activity.title)
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await viewModel.load() }
     }
 
-    private static func dayLabel(for date: Date) -> String {
+    /// The day-section header. "Today"/"Yesterday" are localized; other days use
+    /// the locale-formatted date. Returns `Text` (not `String`) so the localized
+    /// keys aren't rendered verbatim.
+    private static func dayLabel(for date: Date) -> Text {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
-        return date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+        if calendar.isDateInToday(date) { return Text(L10n.Common.today) }
+        if calendar.isDateInYesterday(date) { return Text(L10n.Common.yesterday) }
+        return Text(date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
     }
 }
 

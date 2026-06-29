@@ -19,14 +19,14 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.platinum)
-            .navigationTitle("Server Settings")
+            .navigationTitle(L10n.Settings.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Settings.cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L10n.Settings.save) {
                         if viewModel.save() { dismiss() }
                     }
                     .fontWeight(.semibold)
@@ -41,7 +41,7 @@ struct SettingsView: View {
     private var serverSection: some View {
         Section {
             TextField(text: $viewModel.draft, prompt: Text(verbatim: "https://example.com")) {
-                Text("Server URL")
+                Text(L10n.Settings.serverURL)
             }
             .keyboardType(.URL)
             .textInputAutocapitalization(.never)
@@ -49,17 +49,17 @@ struct SettingsView: View {
             .textContentType(.URL)
             .onChange(of: viewModel.draft) { viewModel.draftChanged() }
         } header: {
-            Text("Server URL")
+            Text(L10n.Settings.serverURL)
         } footer: {
             if viewModel.normalizedURL == nil {
                 Label {
-                    Text(verbatim: "Enter a valid URL, e.g. https://catscan.example.com")
+                    Text(L10n.Settings.invalidURLFooter)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                 }
                 .foregroundStyle(.sunlitClay)
             } else {
-                Text("The address of your Catscan server. Flap events and snapshots are loaded from here.")
+                Text(L10n.Settings.serverURLFooter)
             }
         }
         .listRowBackground(Color.softLinen)
@@ -71,7 +71,7 @@ struct SettingsView: View {
                 Task { await viewModel.testConnection() }
             } label: {
                 HStack {
-                    Label("Test Connection", systemImage: "wifi")
+                    Label(L10n.Settings.testConnection, systemImage: "wifi")
                     Spacer()
                     if viewModel.testState.isTesting {
                         ProgressView()
@@ -106,13 +106,13 @@ struct SettingsView: View {
         case .success(let count):
             // No green in the brand palette; `gunmetal` reads as a calm,
             // high-contrast "all good" tick (it flips light in dark mode).
-            return ("checkmark.circle.fill", .gunmetal, "Connected · ^[\(count) event](inflect: true)")
+            return ("checkmark.circle.fill", .gunmetal, L10n.Settings.connected(eventCount: count))
         case .failure(let message):
             // `message` is already self-describing (an unreachable host or a
             // server-side status), so don't hard-code "couldn't connect" — that
             // mislabels a server that answered with an error status.
             // `vibrantCoral` is the closest the palette has to an alert red.
-            return ("xmark.circle.fill", .vibrantCoral, "Test failed. \(message)")
+            return ("xmark.circle.fill", .vibrantCoral, L10n.Settings.testFailed(message))
         }
     }
 }
