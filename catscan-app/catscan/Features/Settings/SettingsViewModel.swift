@@ -11,11 +11,11 @@ final class SettingsViewModel {
     private(set) var testState: TestState = .idle
 
     private let store: SettingsStore
-    private let makeRepository: @Sendable (URL) -> any FlapEventRepository
+    private let makeRepository: @MainActor (URL) -> any FlapEventRepository
 
     init(
         store: SettingsStore,
-        makeRepository: @escaping @Sendable (URL) -> any FlapEventRepository = {
+        makeRepository: @escaping @MainActor (URL) -> any FlapEventRepository = {
             RemoteFlapEventRepository(serverURL: $0)
         }
     ) {

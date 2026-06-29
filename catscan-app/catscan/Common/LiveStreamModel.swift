@@ -56,7 +56,7 @@ final class LiveStreamModel {
         // host lands on `.failed`. KVO may fire off the main thread, so hop back.
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] observedItem, _ in
             let status = observedItem.status
-            Task { @MainActor in self?.handle(status: status, for: observedItem) }
+            Task { @MainActor [weak self] in self?.handle(status: status, for: observedItem) }
         }
 
         player.play()

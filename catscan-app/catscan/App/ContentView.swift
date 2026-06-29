@@ -42,6 +42,8 @@ struct ContentView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ContentView(settings: .preview(serverURL: "https://catscan.example.com"))
 }
+#endif
